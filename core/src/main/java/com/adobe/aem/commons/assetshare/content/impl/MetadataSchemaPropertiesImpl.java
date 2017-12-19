@@ -20,18 +20,28 @@
 package com.adobe.aem.commons.assetshare.content.impl;
 
 import com.adobe.aem.commons.assetshare.content.MetadataProperties;
+import com.adobe.granite.confmgr.ConfMgr;
 import com.day.cq.dam.commons.util.SchemaFormHelper;
 import org.apache.commons.lang.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.AbstractResourceVisitor;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.caconfig.resource.ConfigurationResourceResolver;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 import java.util.*;
 
 @Component(service = MetadataProperties.class)
 public class MetadataSchemaPropertiesImpl implements MetadataProperties {
+
+    @Reference
+    private ConfigurationResourceResolver configResolver;
+
+    @Reference
+    private ConfMgr confMgr;
 
     @Override
     public Map<String, List<String>> getMetadataProperties(final SlingHttpServletRequest request) {
@@ -42,8 +52,12 @@ public class MetadataSchemaPropertiesImpl implements MetadataProperties {
     public Map<String, List<String>> getMetadataProperties(final SlingHttpServletRequest request, final List<String> metadataFieldTypes) {
         Map<String, List<String>> collectedMetadata = new HashMap<>();
 
-        final Iterator<Resource> resourceIterator = SchemaFormHelper.getSchemaFormsIterator(request.getResourceResolver(),
-                "/conf/global/settings/dam/adminui-extension/metadataschema", 0, 0);
+        ResourceResolver resourceResolver = request.getResourceResolver();
+
+        String suffix = getMetadataSchemaSuffix( request.getRequestPathInfo().getSuffixResource() );
+
+        final Iterator<Resource> resourceIterator = SchemaFormHelper.getSchemaFormsIterator(resourceResolver, suffix,
+                0, 0);
 
         while (resourceIterator.hasNext()){
             final Resource resource = resourceIterator.next();
@@ -55,9 +69,19 @@ public class MetadataSchemaPropertiesImpl implements MetadataProperties {
             }
         }
 
-        return collectedMetadata;    }
+        return collectedMetadata;
+    }
 
+    private String getMetadataSchemaSuffix( Resource resource ){
 
+        Resource confResource = configResolver.getResource(resource, "settings", "dam/adminui-extension/metadataschema" );
+        if( confResource != null ){
+            return confResource.getPath();
+        } else {
+            return "/conf/global/settings/dam/adminui-extension/metadataschema";
+        }
+
+    }
 
     private class MetadataSchemaResourceVisitor extends AbstractResourceVisitor {
         private final Map<String, List<String>> metadata;
