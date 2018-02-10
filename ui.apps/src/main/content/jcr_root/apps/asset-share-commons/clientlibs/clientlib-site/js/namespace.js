@@ -18,9 +18,13 @@
 
 var AssetShare = {};
 
+AssetShare.Events = {};
+
 AssetShare.Search = {};
 
 AssetShare.Cart = {};
+
+AssetShare.ContextHub = AssetShare.ContextHub || {};
 
 AssetShare.SemanticUI = {};
 AssetShare.SemanticUI.Modals = {};
